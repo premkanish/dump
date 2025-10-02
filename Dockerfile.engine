@@ -1,0 +1,45 @@
+# Multi-stage build for trading engine
+FROM rust:1.75-slim as builder
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libdbus-1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy manifests
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY apps ./apps
+
+# Build release binary
+RUN cargo build --release -p engine
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    libdbus-1-3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy binary
+COPY --from=builder /app/target/release/engine /usr/local/bin/engine
+
+# Copy config
+COPY config /app/config
+
+# Create models directory
+RUN mkdir -p /app/models/crypto /app/models/equity
+
+# Expose ports
+EXPOSE 8081 9090
+
+# Run
+CMD ["engine"]
