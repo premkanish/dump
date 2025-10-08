@@ -1,0 +1,54 @@
+# .cargo/config.toml
+# Faster builds with optimized settings
+
+[build]
+# Use LLD linker for faster linking (requires lld to be installed)
+# macOS: brew install llvm
+# Ubuntu: sudo apt-get install lld
+# Windows: included with Visual Studio
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Parallel frontend (faster compilation)
+# rustflags = ["-Z", "threads=8"]  # Requires nightly
+
+[profile.dev]
+# Faster incremental builds
+opt-level = 1
+debug = true
+split-debuginfo = "unpacked"  # macOS/Linux: faster debug builds
+incremental = true
+
+[profile.dev.package."*"]
+# Optimize dependencies even in dev mode
+opt-level = 2
+
+[profile.release]
+# Production optimizations
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
+
+[profile.bench]
+inherits = "release"
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Alias commands
+[alias]
+b = "build"
+c = "check"
+t = "test"
+r = "run"
+br = "build --release"
+rr = "run --release"
