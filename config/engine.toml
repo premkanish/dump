@@ -1,5 +1,7 @@
+# config/engine.toml - Integrated Configuration
+
 [engine]
-mode = "paper"
+mode = "paper"  # "paper" | "live" | "backtest" | "paused"
 feature_window_size = 1000
 inference_timeout_ms = 3
 
@@ -57,3 +59,64 @@ rate_limit_per_sec = 5
 enabled = false
 gateway_host = "127.0.0.1"
 gateway_port = 4001
+
+# ============================================
+# ADVANCED FEATURES (Integrated)
+# ============================================
+
+[advanced]
+enabled = true  # Master switch for all advanced features
+
+# Multi-threaded Order Book Processing
+[advanced.orderbook]
+enabled = true
+workers_per_symbol = 2      # 2-4 recommended (per symbol)
+queue_size = 100000         # Buffer for burst traffic
+update_bbo_every_n = 100    # Update BBO cache frequency
+
+# Parquet Export for ML Training Pipeline
+[advanced.parquet]
+enabled = true
+output_dir = "./training_data"
+batch_size = 1000           # Samples before flush
+samples_per_shard = 100000  # Rotate shard after N samples
+compression = "snappy"      # snappy, gzip, zstd, lz4
+enable_s3_upload = false
+s3_bucket = ""
+s3_prefix = "hft-data"
+upload_interval_mins = 60   # Upload to S3 every hour
+
+# RL Agent Configuration
+[advanced.rl_agent]
+enabled = false             # Disable by default (requires trained models)
+actor_path = "./models/rl/actor.onnx"
+critic_path = "./models/rl/critic.onnx"
+action_type = "MultiDiscrete"  # Discrete, Continuous, MultiDiscrete
+use_recurrent = false
+sequence_length = 10
+epsilon = 0.0               # No exploration in production
+temperature = 1.0
+initial_capital = 100000.0
+
+# GPU-Accelerated Feature Computation
+[advanced.gpu]
+enabled = false             # Disable by default (requires GPU + model)
+device = "CPU"              # CPU, CUDA, ROCm, TensorRT
+device_id = 0               # GPU device ID (for multi-GPU systems)
+batch_size = 32
+model_path = "./models/gpu/features.onnx"
+flush_interval_ms = 10      # Auto-flush batch every 10ms
+enable_cpu_fallback = true  # Fall back to CPU if GPU fails
+
+# Performance Tuning
+[advanced.performance]
+enable_simd = true          # Use SIMD instructions on CPU
+num_parallel_symbols = 50   # Max symbols to process in parallel
+thread_pool_size = 0        # 0 = auto-detect cores
+
+# Monitoring & Metrics
+[advanced.monitoring]
+collect_training_samples = true
+log_rl_decisions = true
+track_gpu_memory = true
+export_prometheus = true
