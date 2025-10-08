@@ -1,4 +1,4 @@
-// crates/engine/src/main.rs
+// crates/engine/src/main.rs (Updated for AWS SDK 1.106.0)
 use engine::*;
 use common::*;
 use adapters::{HyperliquidAdapter};
@@ -28,6 +28,20 @@ async fn main() -> Result<()> {
     
     // Load configuration
     let config = load_config()?;
+    
+    // Initialize AWS SDK with BehaviorVersion (AWS SDK 1.106.0)
+    let aws_config = if config.enable_aws {
+        Some(
+            aws_config::defaults(aws_config::BehaviorVersion::latest())
+                .load()
+                .await
+        )
+    } else {
+        None
+    };
+    
+    // Initialize SNS client if needed
+    let sns_client = aws_config.as_ref().map(|cfg| aws_sdk_sns::Client::new(cfg));
     
     // Initialize trading engine
     let engine_config = EngineConfig {
@@ -85,7 +99,7 @@ async fn main() -> Result<()> {
     // Setup shutdown signal
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
     
-    // Spawn WebSocket server
+    // Spawn WebSocket server (Axum 0.8)
     let ws_handle = tokio::spawn(async move {
         let addr = "0.0.0.0:8081";
         tracing::info!("WebSocket server listening on {}", addr);
@@ -131,7 +145,11 @@ async fn main() -> Result<()> {
     };
     
     // Spawn alert publisher
-    let alert_publisher = Arc::new(ws_server::AlertPublisher::new(alert_tx, None, None));
+    let alert_publisher = Arc::new(ws_server::AlertPublisher::new(
+        alert_tx, 
+        sns_client,
+        config.sns_topic_arn
+    ));
     
     // Wait for shutdown signal
     tokio::select! {
@@ -156,6 +174,8 @@ async fn main() -> Result<()> {
 #[derive(serde::Deserialize)]
 struct Config {
     enable_universe: bool,
+    enable_aws: bool,
+    sns_topic_arn: Option<String>,
 }
 
 fn load_config() -> Result<Config> {
@@ -164,6 +184,11 @@ fn load_config() -> Result<Config> {
             .unwrap_or_else(|_| "false".to_string())
             .parse()
             .unwrap_or(false),
+        enable_aws: std::env::var("ENABLE_AWS")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse()
+            .unwrap_or(false),
+        sns_topic_arn: std::env::var("SNS_TOPIC_ARN").ok(),
     })
 }
 
