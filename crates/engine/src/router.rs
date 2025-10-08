@@ -451,3 +451,55 @@ mod tests {
             microprice: 50001.0,
             vwap_ratio: 1.001,
         };
+        
+        let costs = CostModel {
+            taker_fee_bps: 5.0,
+            maker_fee_bps: 2.0,
+            maker_rebate_bps: 1.0,
+            impact_bps: 2.0,
+            slippage_buffer_bps: 1.0,
+        };
+        
+        let decision = router.decide(&prediction, &features, &costs);
+        assert!(decision.should_trade);
+        assert!(decision.size_fraction > 0.0);
+    }
+    
+    #[test]
+    fn test_risk_manager() {
+        let limits = RiskLimits {
+            max_notional_per_symbol: 50000.0,
+            max_total_notional: 100000.0,
+            max_leverage: 3.0,
+            max_loss_per_day: 5000.0,
+            max_position_concentration: 0.5,
+        };
+        
+        let mut manager = RiskManager::new(limits);
+        
+        // Should pass
+        assert!(manager.check_limits("BTC", 30000.0).is_ok());
+        
+        // Add position
+        let position = Position {
+            symbol: "BTC".to_string(),
+            size: 1.0,
+            entry_price: 50000.0,
+            mark_price: 50000.0,
+            unrealized_pnl: 0.0,
+            realized_pnl: 0.0,
+            leverage: 1.0,
+            margin_used: 50000.0,
+            liquidation_price: None,
+        };
+        
+        manager.update_position(position);
+        
+        // Should reject (exceeds per-symbol limit)
+        assert!(manager.check_limits("BTC", 10000.0).is_err());
+        
+        // Test kill switch
+        manager.activate_kill_switch();
+        assert!(manager.check_limits("ETH", 10000.0).is_err());
+    }
+}
