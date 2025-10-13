@@ -1,0 +1,171 @@
+# config/engine.toml - Production HFT Configuration
+# GPU features and RL are now DEFAULT (not "advanced")
+
+[engine]
+mode = "paper"  # paper, live, backtest, paused
+
+# GPU Feature Computation (DEFAULT)
+gpu_enabled = true
+gpu_device = "CUDA"  # CUDA, ROCm, TensorRT, CPU
+gpu_device_id = 0
+gpu_batch_size = 32
+
+# Batching (for GPU efficiency)
+batch_size = 32
+batch_timeout_ms = 10  # Flush every 10ms OR when batch full
+
+# ML Inference
+inference_timeout_ms = 3
+inference_device = "GPU"  # GPU, CPU, TensorRT
+
+# Decision Mode 
+decision_mode = "Hybrid"
+
+[gate]
+enabled = true
+min_edge_bps = 5.0
+min_confidence = 0.5
+max_hold_s = 30.0
+max_spread_bps = 10.0
+
+[risk]
+max_notional_per_symbol = 100000.0
+max_total_notional = 500000.0
+max_leverage = 3.0
+max_loss_per_day = 10000.0
+max_position_concentration = 0.25
+
+[universe]
+# OPTION A: Manual symbols (for testing)
+enabled = false
+
+# OPTION B: Automated universe (for production)
+# enabled = true
+# crypto_count = 30
+# equity_count = 20
+# top_selection_crypto = 7
+# top_selection_equity = 3
+# rebuild_interval_mins = 120
+# refresh_interval_mins = 15
+# min_volume_usd = 1000000.0
+# min_liquidity_usd = 500000.0
+
+[s3]
+enabled = false
+bucket = "hft-training-data"
+region = "us-east-1"
+
+[sns]
+enabled = false
+topic_arn = ""
+
+[websocket]
+host = "0.0.0.0"
+port = 8081
+
+[models]
+crypto_dir = "./models/crypto"
+equity_dir = "./models/equity"
+rl_actor = "./models/rl/actor.onnx"
+rl_critic = "./models/rl/critic.onnx"
+
+[venues.hyperliquid]
+enabled = true
+rate_limit_per_sec = 10
+
+[venues.binance]
+enabled = false
+rate_limit_per_sec = 5
+
+[venues.ibkr]
+enabled = false
+gateway_host = "127.0.0.1"
+gateway_port = 4001
+
+# Multi-threaded Order Book Processing
+[advanced.orderbook]
+enabled = true
+workers_per_symbol = 2      # 2-4 recommended (per symbol)
+queue_size = 100000         # Buffer for burst traffic
+update_bbo_every_n = 100    # Update BBO cache frequency
+
+# Parquet Export for ML Training Pipeline
+[advanced.parquet]
+enabled = true
+output_dir = "./training_data"
+batch_size = 1000           # Samples before flush
+samples_per_shard = 100000  # Rotate shard after N samples
+compression = "snappy"      # snappy, gzip, zstd, lz4
+enable_s3_upload = false
+s3_bucket = ""
+s3_prefix = "hft-data"
+upload_interval_mins = 60   # Upload to S3 every hour
+
+# GPU-Accelerated Feature Computation
+[advanced.gpu]
+enabled = false             # Disable by default (requires GPU + model)
+device = "CPU"              # CPU, CUDA, ROCm, TensorRT
+device_id = 0               # GPU device ID (for multi-GPU systems)
+batch_size = 32
+model_path = "./models/gpu/features.onnx"
+flush_interval_ms = 10      # Auto-flush batch every 10ms
+enable_cpu_fallback = true  # Fall back to CPU if GPU fails
+
+# Performance Tuning
+[advanced.performance]
+enable_simd = true          # Use SIMD instructions on CPU
+num_parallel_symbols = 50   # Max symbols to process in parallel
+thread_pool_size = 0        # 0 = auto-detect cores
+
+# Monitoring & Metrics
+[advanced.monitoring]
+collect_training_samples = true
+log_rl_decisions = true
+track_gpu_memory = true
+export_prometheus = true
+
+# =============================================================================
+# LATENCY TARGETS (for monitoring)
+# =============================================================================
+# 1. Market data ingestion: < 10μs
+# 2. GPU feature computation: < 500μs (50 symbols)
+# 3. ML inference: < 3ms
+# 4. Routing decision: < 50μs
+# 5. Order execution: < 1ms
+# TOTAL: < 5ms end-to-end
+
+# =============================================================================
+# BUILD INSTRUCTIONS
+# =============================================================================
+# With CUDA (NVIDIA GPUs):
+# cargo build --release --features cuda
+#
+# With ROCm (AMD GPUs):
+# cargo build --release --features wgpu
+#
+# CPU only (development):
+# cargo build --release
+#
+# With everything:
+# cargo build --release --features cuda,wgpu
+
+# =============================================================================
+# DEPLOYMENT EXAMPLES
+# =============================================================================
+
+# Development (CPU only):
+# [engine]
+# gpu_enabled = false
+# use_rl_agent = false
+
+# Production (NVIDIA GPU + RL):
+# [engine]
+# gpu_enabled = true
+# gpu_device = "CUDA"
+# use_rl_agent = true
+# mode = "live"
+
+# High-performance (TensorRT):
+# [engine]
+# gpu_device = "TensorRT"
+# inference_device = "TensorRT"

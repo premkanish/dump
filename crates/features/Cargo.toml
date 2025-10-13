@@ -1,0 +1,12 @@
+[package]
+name = "features"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+common = { path = "../common" }
+ndarray.workspace = true
+ndarray-stats.workspace = true
+serde.workspace = true
+anyhow.workspace = true

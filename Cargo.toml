@@ -1,0 +1,130 @@
+[workspace]
+members = [
+    "apps/terminal",
+    "crates/engine",
+    "crates/adapters",
+    "crates/common",
+    "crates/features",
+    "crates/universe",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Toomo Team <team@toomo.ai>"]
+license = "MIT"
+repository = "https://github.com/vroha/toomo"
+
+[workspace.dependencies]
+# Async runtime (latest stable versions as of Sep 2025)
+tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "sync", "time", "fs"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
+futures = "0.3"
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Logging & Metrics (current 2025 versions)
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
+metrics = "0.24.2"
+metrics-exporter-prometheus = "0.15.3"
+hdrhistogram = "7.5.5"
+
+# Web framework (Axum 0.8 series from April 2025)
+axum = { version = "0.8", features = ["ws", "macros"] }
+tower = "0.5.1"
+tower-http = { version = "0.6.6", features = ["cors", "compression-gzip"] }
+hyper = { version = "1.7", features = ["full"] }
+
+# HTTP client (Sept 2025 version)
+reqwest = { version = "0.12.8", features = ["json", "gzip", "brotli", "rustls-tls"] }
+
+# Security (latest 2025 versions)
+keyring = "2.3.4"
+aes-gcm = "0.10.3"
+zeroize = { version = "1.8.1", features = ["derive"] }
+argon2 = "0.5"
+base64 = "0.22.1"
+ring = "0.17.8"
+hmac = "0.12.1"
+sha2 = "0.10.8"
+hex = "0.4.3"
+
+# Math & ML
+ndarray = { version = "0.16.1", features = ["rayon", "serde"] }
+ndarray-stats = "0.6"
+ort = { version = "2.0.0-rc.10", features = ["download-binaries", "half", "cuda", "tensorrt"] }
+
+# GPU Compute (NEW - Default enabled)
+cudarc = { version = "0.12", features = ["driver", "nvrtc", "cublas"] }
+wgpu = { version = "22.1" }
+pollster = "0.3"
+bytemuck = { version = "1.18", features = ["derive"] }
+
+# SIMD & Parallel
+rayon = "1.10"
+simsimd = "5.9"
+
+# Data storage (Arrow 56.2.0 series stable in Sep 2025)
+parquet = { version = "56.2.0", features = ["async"] }
+arrow-array = "56.2.0"
+arrow-schema = "56.2.0"
+arrow-select = "56.2.0"
+
+# AWS SDK (latest Sept 2025 versions)
+aws-config = { version = "1.8.6", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.106.0"
+aws-sdk-sns = "1.106.0"
+aws-sdk-secretsmanager = "1.106.0"
+
+# Message bus (modern async-nats, not legacy 'nats' crate)
+async-nats = "0.42.0"
+
+# Database
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "postgres", "chrono"] }
+
+# Concurrency (latest 2025 versions)
+crossbeam-channel = "0.5"
+parking_lot = "0.12.4"
+dashmap = "6.1"
+
+# Time
+chrono = { version = "0.4.38", features = ["serde"] }
+
+# Config
+config = "0.15"
+toml = "0.8"
+
+# Utilities (latest 2025 versions)
+once_cell = "1.20.2"
+num-traits = "0.2.19"
+ordered-float = "4.3.0"
+itertools = "0.13.0"
+
+# UI (egui 0.32.3 from Sept 2025)
+eframe = "0.32.3"
+egui = "0.32.3"
+egui_extras = { version = "0.32.3", features = ["all_loaders"] }
+rfd = "0.15.4"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.bench]
+inherits = "release"
+
+[profile.dev]
+opt-level = 1

@@ -1,0 +1,33 @@
+[Unit]
+Description=HFT Trading Engine
+After=network.target
+
+[Service]
+Type=simple
+User=hft
+Group=hft
+WorkingDirectory=/opt/hft
+ExecStart=/opt/hft/engine
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hft-engine
+
+# Environment
+Environment="RUST_LOG=info"
+EnvironmentFile=/opt/hft/.env
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/hft/data
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
